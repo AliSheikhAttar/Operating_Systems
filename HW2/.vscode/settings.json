@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "stdlib.h": "c"
+    },
+    "cmake.sourceDirectory": "/home/asa/Code/Git/Operating_systems/HW2/curl-8.7.1/src"
+}

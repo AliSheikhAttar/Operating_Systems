@@ -1,93 +1,64 @@
+#define _GNU_SOURCE 
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
 #include <pthread.h>
+#include <sys/stat.h>
 
+#define MAX_PATH_LENGTH 1024
 #define MAX_THREADS 10
 
-struct ThreadData {
-    int *arr;
-    int start;
-    int end;
-    int max;
-};
+char filename[MAX_PATH_LENGTH]; 
+int flag = 0; 
 
-void* threadFunction(void* arg) {
-    struct ThreadData* data = (struct ThreadData*) arg;
-    int max = data->arr[data->start];
-    for (int i = data->start + 1; i < data->end; i++) {
-        if (data->arr[i] > max)
-            max = data->arr[i];
+void *searchFile(void *arg) {
+    char *search_path = (char *)arg;
+    DIR *dir;
+    struct dirent *entry;
+
+    if ((dir = opendir(search_path)) == NULL) {
+        // perror("opendir");
+        pthread_exit(NULL);
     }
-    data->max = max;
-    return NULL;
-}
 
-void sort(int *arr, int size) {
-    for (int i = 0; i < size - 1; i++) {
-        for (int j = 0; j < size - i - 1; j++) {
-            if (arr[j] < arr[j + 1]) {
-                int temp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
-            }
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        if (strcmp(entry->d_name, filename) == 0) {
+            printf("File found: %s/%s\n", search_path, entry->d_name);
+            flag = 1;
+        }
+
+        if (entry->d_type == DT_DIR) {
+            char new_path[MAX_PATH_LENGTH];
+            snprintf(new_path, sizeof(new_path), "%s/%s", search_path, entry->d_name);
+
+            pthread_t thread;
+            pthread_create(&thread, NULL, searchFile, (void *)new_path);
+            pthread_join(thread, NULL); 
         }
     }
+
+    closedir(dir);
+    pthread_exit(NULL);
 }
 
 int main() {
-    int n, m;
-    printf("Enter the size of the array (n): ");
-    scanf("%d", &n);
-    printf("Enter the number of partitions (m): ");
-    scanf("%d", &m);
+    printf("Enter the filename to search: ");
+    fgets(filename, sizeof(filename), stdin);
+    filename[strcspn(filename, "\n")] = '\0'; 
 
-    if (m > n) {
-        printf("Error: Number of partitions cannot exceed the size of the array.\n");
-        return 1;
+    pthread_t main_thread;
+    pthread_create(&main_thread, NULL, searchFile, "/home/asa/Code/"); // enter address
+
+    pthread_join(main_thread, NULL);
+
+    if (flag == 0) {
+        printf("No directory or file found.\n");
     }
-
-    int *array = (int *)malloc(n * sizeof(int));
-    printf("Enter the elements of the array:\n");
-    for (int i = 0; i < n; i++) {
-        scanf("%d", &array[i]);
-    }
-
-    pthread_t threads[MAX_THREADS];
-    struct ThreadData threadData[MAX_THREADS];
-
-    int partitionSize = n / m;
-    int remainingElements = n % m;
-    int startIndex = 0;
-    for (int i = 0; i < m; i++) {
-        int partitionEnd = startIndex + partitionSize + (i < remainingElements ? 1 : 0);
-
-        threadData[i].arr = array;
-        threadData[i].start = startIndex;
-        threadData[i].end = partitionEnd;
-
-        pthread_create(&threads[i], NULL, threadFunction, &threadData[i]);
-
-        startIndex = partitionEnd;
-    }
-
-    for (int i = 0; i < m; i++) {
-        pthread_join(threads[i], NULL);
-    }
-
-    int *max_values = (int *)malloc(m * sizeof(int));
-    for (int i = 0; i < m; i++) {
-        max_values[i] = threadData[i].max;
-    }
-
-    sort(max_values, m);
-
-    printf("Maxes descending order :\n");
-    for (int i = 0; i < m; i++) {
-        printf("%d\n", max_values[i]);
-    }
-
-    free(array);
-    free(max_values);
 
     return 0;
 }
