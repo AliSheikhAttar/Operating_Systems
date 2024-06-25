@@ -1,4 +1,4 @@
-# Basics
+# Basic C
 ## Q1
 
 **Maximum Profit**

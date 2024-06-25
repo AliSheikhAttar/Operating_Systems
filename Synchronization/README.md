@@ -1,3 +1,5 @@
+# Synchronization
+
 ## Q1 - Calculating \( e \) Using Threads
 
 In this question, you need to compute the value of \( e \) using threads. Write a program to calculate the series for \( e \) using the formula below, up to a specified number of terms.

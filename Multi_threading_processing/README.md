@@ -1,4 +1,4 @@
-# Multi thread & multi processes
+# Multithreading & Multiprocessing
 
 ## Maximum Sorts
 
